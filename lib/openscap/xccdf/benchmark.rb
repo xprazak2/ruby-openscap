@@ -11,7 +11,7 @@
 
 require 'openscap/source'
 require 'openscap/xccdf/profile'
-require 'openscap/xccdf/item'
+require 'openscap/xccdf/item_builder'
 
 module OpenSCAP
   module Xccdf
@@ -34,7 +34,7 @@ module OpenSCAP
       end
 
       def items
-        @items ||= items_init
+        items_init
       end
 
       def destroy
@@ -61,7 +61,7 @@ module OpenSCAP
         items_it = OpenSCAP.xccdf_item_get_content raw
         while OpenSCAP.xccdf_item_iterator_has_more items_it
           item_p = OpenSCAP.xccdf_item_iterator_next items_it
-          item = OpenSCAP::Xccdf::Item.build item_p
+          item = OpenSCAP::Xccdf::ItemBuilder.new.build item_p
           items.merge! item.sub_items
           items[item.id] = item
           # TODO: iterate through childs

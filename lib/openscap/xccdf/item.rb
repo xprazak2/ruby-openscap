@@ -11,26 +11,26 @@
 
 require 'openscap/exceptions'
 require 'openscap/text'
-require 'openscap/xccdf/group'
-require 'openscap/xccdf/rule'
+# require 'openscap/xccdf/group'
+require 'openscap/xccdf/item_builder'
 require 'openscap/xccdf/reference'
 
 module OpenSCAP
   module Xccdf
     class Item
-      def self.build(t)
-        raise OpenSCAP::OpenSCAPError, "Cannot initialize #{self.class.name} with #{t}" \
-          unless t.is_a?(FFI::Pointer)
-        # This is Abstract base class that enables you to build its child
-        case OpenSCAP.xccdf_item_get_type t
-        when :group
-          OpenSCAP::Xccdf::Group.new t
-        when :rule
-          OpenSCAP::Xccdf::Rule.new t
-        else
-          raise OpenSCAP::OpenSCAPError, "Unknown #{self.class.name} type: #{OpenSCAP.xccdf_item_get_type t}"
-        end
-      end
+      # def self.build(t)
+      #   raise OpenSCAP::OpenSCAPError, "Cannot initialize #{self.class.name} with #{t}" \
+      #     unless t.is_a?(FFI::Pointer)
+      #   # This is Abstract base class that enables you to build its child
+      #   case OpenSCAP.xccdf_item_get_type t
+      #   when :group
+      #     OpenSCAP::Xccdf::Group.new t
+      #   when :rule
+      #     OpenSCAP::Xccdf::Rule.new t
+      #   else
+      #     raise OpenSCAP::OpenSCAPError, "Unknown #{self.class.name} type: #{OpenSCAP.xccdf_item_get_type t}"
+      #   end
+      # end
 
       def initialize(t)
         if self.class == OpenSCAP::Xccdf::Item
@@ -76,7 +76,7 @@ module OpenSCAP
       end
 
       def sub_items
-        @sub_items ||= sub_items_init
+        sub_items_init
       end
 
       def destroy
@@ -91,7 +91,7 @@ module OpenSCAP
         items_it = OpenSCAP.xccdf_item_get_content @raw
         while OpenSCAP.xccdf_item_iterator_has_more items_it
           item_p = OpenSCAP.xccdf_item_iterator_next items_it
-          item = OpenSCAP::Xccdf::Item.build item_p
+          item = OpenSCAP::Xccdf::ItemBuilder.new.build item_p
           collect.merge! item.sub_items
           collect[item.id] = item
         end
@@ -107,18 +107,6 @@ module OpenSCAP
   attach_function :xccdf_item_get_title, [:pointer], :pointer
   attach_function :xccdf_item_get_description, [:pointer], :pointer
   attach_function :xccdf_item_get_rationale, [:pointer], :pointer
-
-  XccdfItemType = enum(:benchmark, 0x0100,
-                       :profile, 0x0200,
-                       :result, 0x0400,
-                       :rule, 0x1000,
-                       :group, 0x2000,
-                       :value, 0x4000)
-  attach_function :xccdf_item_get_type, [:pointer], XccdfItemType
-
-  attach_function :xccdf_item_iterator_has_more, [:pointer], :bool
-  attach_function :xccdf_item_iterator_next, [:pointer], :pointer
-  attach_function :xccdf_item_iterator_free, [:pointer], :void
 
   attach_function :xccdf_item_get_references, [:pointer], :pointer
   attach_function :oscap_reference_iterator_has_more, [:pointer], :bool
